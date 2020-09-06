@@ -71,6 +71,12 @@ if(NOT DEFINED CACHE{MAKECBXS_STDLIB})
 	message(STATUS "Detected standard library ${MAKECBXS_STDLIB}")
 endif()
 
+set(MAKECBXS_SOURCES
+	main.cpp
+	RefPack.cpp
+)
+
+add_executable(makecbxs ${MAKECBXS_SOURCES})
 
 if(MAKECBXS_STDLIB STREQUAL "llvm")
 	message(STATUS "Linking c++fs library")
@@ -80,12 +86,7 @@ elseif(MAKECBXS_STDLIB STREQUAL "gnu")
 	target_link_libraries(makecbxs stdc++fs)
 endif()
 
-set(MAKECBXS_SOURCES
-	main.cpp
-	RefPack.cpp
-)
 
-add_executable(makecbxs ${MAKECBXS_SOURCES})
 
 target_include_directories(makecbxs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -4,39 +4,48 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+
 #include "RefPack.h"
+
+#include "span.h"
+#include "types.h"
+
 
 namespace fs = std::filesystem;
 
+// TODO: this should probably be derived by the file name?
 constexpr static char chunk_prefix[] = "BAM_";
 
 struct BxStreamingFileHeader {
+	// magic constants (TODO: these are entirely endian specific so need to be 
+	// defined one way on LE, and another way on BE)
+	constexpr static uint32 CBXS = 0x53584243;
+	constexpr static uint32 CEND = 0x444E4543;
+	
 	// Either CBXS for a file chunk,
 	// or CEND for a end of the file.
-	char magic[4];
+	uint32 magic;
 
 	// The compressed size of the chunk.
 	uint32 size;
 
-	// hacky operator
+	// operator to check if header is valid
 	operator bool() {
-		return size != 0;
+		return magic == BxStreamingFileHeader::CBXS || 
+				magic == BxStreamingFileHeader::CEND;
 	}
 
+#ifdef DUMP
 	void Dump() {
-		std::cout << "Chunk information:\n";
-
-		if(!std::strcmp(magic, "CEND"))
+		if(magic == BxStreamingFileHeader::CEND)
 			std::cout << " - End of file chunk\n";
-		else
-			std::cout << " - Regular chunk\n";
 
-		std::cout << " - Chunk size (compressed): " << std::hex << size << std::dec << " bytes\n";
+		std::cout << " - Chunk size (compressed): " << size << " bytes\n";
 	}
+#endif
+
 };
 
-// this probably doesn't copy elide,
-// i'm not sure
 template <typename T>
 inline T ReadUserType(std::istream& stream) {
 	T temp {};
@@ -45,18 +54,12 @@ inline T ReadUserType(std::istream& stream) {
 	return temp;
 }
 
-void help(char* progname) {
-	std::cout << progname << " usage: " << progname << " /path/to/BAM.[x]SB [OutputFolder]\n";
-}
-
 int main(int argc, char** argv) {
 	if(argc < 3) {
-		help(argv[0]);
+		std::cout << "BAM.[x]SB streaming file extractor tool\n";
+		std::cout << "Usage: " << argv[0] << " /path/to/data/worlds/bam.[x]sb [OutputFolder]\n";
 		return 0;
 	}
-
-	std::cout << "BAM.[x]SB streaming file extractor\n";
-	std::cout << "(C) 2020 Lily\n";
 
 	std::string output = argv[2];
 
@@ -94,9 +97,11 @@ int main(int argc, char** argv) {
 		if(!header)
 			break;
 
+#ifdef DUMP
 		header.Dump();
+#endif
 
-		if(!std::strncmp(header.magic, "CEND", 4))
+		if(header.magic == BxStreamingFileHeader::CEND)
 			endChunk = true;
 
 		nextpos += header.size;
@@ -105,6 +110,10 @@ int main(int argc, char** argv) {
 		stream.read((char*)chunkBuffer.data(), header.size);
 
 		std::vector<byte> refBuffer = refpack::Decompress(MakeSpan(chunkBuffer.data(), header.size));
+		
+#ifdef DUMP
+		std::cout << " - Chunk size (decompressed): " << refBuffer.size() << " bytes\n";
+#endif
 
 		// append decompressed data
 		fileData.insert(fileData.end(), refBuffer.begin(), refBuffer.end());
@@ -112,6 +121,8 @@ int main(int argc, char** argv) {
 		if(endChunk) {
 			auto outPath = path / (std::string(chunk_prefix) + std::to_string(fileNum) + ".bin");
 			std::ofstream os(outPath.string(), std::ostream::binary);
+
+			std::cout << " - Total file size: " << fileData.size() / 1000 << " KB\n";
 
 			os.write((char*)fileData.data(), fileData.size());
 			os.close();
