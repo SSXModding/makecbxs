@@ -2,47 +2,44 @@
 
 namespace refpack {
 
-	// helper constexpr to not hardcode 3u all over the place
-	constexpr auto uint24_size = 3u;
-
 	// TODO: refpack compression
 
-	std::vector<byte> Decompress(Span<byte> compressed) {
-		const byte* in = compressed.get();
+	std::vector<mco::byte> Decompress(mco::Span<mco::byte> compressed) {
+		const mco::byte* in = compressed.get();
 
 		// Command variables
-		byte first;
-		byte second;
-		byte third;
-		byte fourth;
+		mco::byte first;
+		mco::byte second;
+		mco::byte third;
+		mco::byte fourth;
 
 		// output buffer
-		std::vector<byte> out;
+		std::vector<mco::byte> out;
 
-		uint32 proc_len;
-		uint32 ref_run;
-		byte* ref_ptr;
+		mco::uint32 proc_len;
+		mco::uint32 ref_run;
+		mco::byte* ref_ptr;
 
 		// perform null & 0 size check
 		if(!in || compressed.size() == 0)
 			return {};
 
-		uint16 signature = ((in[0] << 8) | in[1]);
-		in += sizeof(uint16);
+		mco::uint16 signature = ((in[0] << 8) | in[1]);
+		in += sizeof(mco::uint16);
 
 		// skip uint24 compressed size field
 		if(signature & 0x0100)
-			in += uint24_size;
+			in += mco::threebyte_size;
 
 		// read the uint24 decompressed size
-		uint32 decompressed_size = ((in[0] << 16) | (in[1] << 8) | in[2]);
-		in += uint24_size;
+		mco::uint32 decompressed_size = ((in[0] << 16) | (in[1] << 8) | in[2]);
+		in += mco::threebyte_size;
 
 		// then resize output buffer to decompressed size
 		// and retrive pointer to that data
 
 		out.resize(decompressed_size);
-		byte* outptr = out.data();
+		mco::byte* outptr = out.data();
 
 		while(true) {
 			// Retrive the first command byte
@@ -54,13 +51,13 @@ namespace refpack {
 
 				proc_len = first & 0x03;
 
-				for(uint32 i = 0; i < proc_len; i++)
+				for(mco::uint32 i = 0; i < proc_len; i++)
 					*outptr++ = *in++;
 
 				ref_ptr = outptr - ((first & 0x60) << 3) - second - 1;
 				ref_run = ((first >> 2) & 0x07) + 3;
 
-				for(uint32 i = 0; i < ref_run; ++i)
+				for(mco::uint32 i = 0; i < ref_run; ++i)
 					*outptr++ = *ref_ptr++;
 
 			} else if(!(first & 0x40)) {
@@ -70,13 +67,13 @@ namespace refpack {
 
 				proc_len = second >> 6;
 
-				for(uint32 i = 0; i < proc_len; ++i)
+				for(mco::uint32 i = 0; i < proc_len; ++i)
 					*outptr++ = *in++;
 
 				ref_ptr = outptr - ((second & 0x3f) << 8) - third - 1;
 				ref_run = (first & 0x3f) + 4;
 
-				for(uint32 i = 0; i < ref_run; ++i)
+				for(mco::uint32 i = 0; i < ref_run; ++i)
 					*outptr++ = *ref_ptr++;
 
 			} else if(!(first & 0x20)) {
@@ -87,13 +84,13 @@ namespace refpack {
 
 				proc_len = first & 0x03;
 
-				for(uint32 i = 0; i < proc_len; ++i)
+				for(mco::uint32 i = 0; i < proc_len; ++i)
 					*outptr++ = *in++;
 
 				ref_ptr = outptr - ((first & 0x10) << 12) - (second << 8) - third - 1;
 				ref_run = ((first & 0x0c) << 6) + fourth + 5;
 
-				for(uint32 i = 0; i < ref_run; ++i)
+				for(mco::uint32 i = 0; i < ref_run; ++i)
 					*outptr++ = *ref_ptr++;
 			} else {
 				// 1-byte command: 111PPPPP
@@ -103,14 +100,14 @@ namespace refpack {
 				if(proc_len <= 0x70) {
 					// no stop flag
 
-					for(uint32 i = 0; i < proc_len; ++i)
+					for(mco::uint32 i = 0; i < proc_len; ++i)
 						*outptr++ = *in++;
 
 				} else {
 					// has a stop flag
 					proc_len = first & 0x3;
 
-					for(uint32 i = 0; i < proc_len; ++i)
+					for(mco::uint32 i = 0; i < proc_len; ++i)
 						*outptr++ = *in++;
 
 					break;

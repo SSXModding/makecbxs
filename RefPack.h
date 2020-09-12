@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "types.h"
-#include "span.h"
+#include <modeco/types.h>
+#include <modeco/span.h>
 
 namespace refpack {
 
@@ -12,6 +12,6 @@ namespace refpack {
 	 * \param[in] compressed Compressed span of data.
 	 * \return A decompressed buffer.
 	 */
-	std::vector<byte> Decompress(Span<byte> compressed);
+	std::vector<mco::byte> Decompress(mco::Span<mco::byte> compressed);
 
 } // namespace refpack

@@ -1,0 +1,3 @@
+[submodule "vendor/mcommon"]
+	path = vendor/mcommon
+	url = https://github.com/modeco80/libmcommon
