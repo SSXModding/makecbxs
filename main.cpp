@@ -8,14 +8,13 @@
 #include "RefPack.h"
 
 #include <modeco/Logger.h>
-#include "stdout_sink.h"
+#include <modeco/IostreamLoggerSink.h>
 
 #include <modeco/span.h>
 #include <modeco/types.h>
 
-static StdoutSink sink;
-
-static mco::Logger logger = mco::Logger::CreateChannel("MakeCBXS");
+static mco::IostreamLoggerSink sink;
+static mco::Logger logger = mco::Logger::CreateLogger("MakeCBXS");
 
 namespace fs = std::filesystem;
 
