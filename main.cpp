@@ -13,51 +13,18 @@
 #include <modeco/span.h>
 #include <modeco/types.h>
 
+#define DUMP
+
+namespace fs = std::filesystem;
+
 static mco::IostreamLoggerSink sink;
 static mco::Logger logger = mco::Logger::CreateLogger("MakeCBXS");
 
-namespace fs = std::filesystem;
+#include "Structs.h"
 
 // TODO: this should probably be derived by the file name?
 constexpr static char chunk_prefix[] = "BAM_";
 
-struct BxStreamingFileHeader {
-	// magic constants (TODO: these are entirely endian specific so need to be 
-	// defined one way on LE, and another way on BE)
-	constexpr static mco::uint32 CBXS = 0x53584243;
-	constexpr static mco::uint32 CEND = 0x444E4543;
-	
-	// Either CBXS for a file chunk,
-	// or CEND for a end of the file.
-	mco::uint32 magic;
-
-	// The compressed size of the chunk.
-	mco::uint32 size;
-
-	// operator to check if header is valid
-	operator bool() {
-		return magic == BxStreamingFileHeader::CBXS || 
-				magic == BxStreamingFileHeader::CEND;
-	}
-
-#ifdef DUMP
-	void Dump() {
-		if(magic == BxStreamingFileHeader::CEND)
-			logger.info(" - This chunk is a end chunk");
-
-		logger.info(" - Chunk size (compressed): ", size, " bytes");
-	}
-#endif
-
-};
-
-template <typename T>
-inline T ReadUserType(std::istream& stream) {
-	T temp {};
-
-	stream.read((char*)&temp, sizeof(T));
-	return temp;
-}
 
 int main(int argc, char** argv) {
 	if(argc < 3) {
@@ -79,7 +46,7 @@ int main(int argc, char** argv) {
 
 	// file buffer we concat into
 	// cleared after we write the file to avoid memory woes
-	std::vector<mco::byte> fileData;
+	std::vector<char> fileData;
 
 	// set to true when we encounter a CEND
 	bool endChunk = false;
@@ -127,6 +94,11 @@ int main(int argc, char** argv) {
 
 		if(endChunk) {
 			auto outPath = path / (std::string(chunk_prefix) + std::to_string(fileNum) + ".bin");
+			auto interleaveDir = path / (std::string(chunk_prefix) + std::to_string(fileNum) + "_uninterleaved");
+			
+			fs::create_directories(interleaveDir);
+			
+			
 			std::ofstream os(outPath.string(), std::ostream::binary);
 
 			logger.info(" - Total file size: ", fileData.size() / 1000, " KB");
@@ -134,9 +106,28 @@ int main(int argc, char** argv) {
 			os.write((char*)fileData.data(), fileData.size());
 			os.close();
 
-			logger.info("Wrote decompressed and unchunked file to \"", outPath.string(), "\".");
+			logger.info("Wrote decompressed and unchunked (non-unstreamed) file to \"", outPath.string(), "\".");
 			fileData.clear();
 			++fileNum;
+			
+			// For usability's sake, also write out uninterleaved data
+			// I wish there was a better way to do this..
+			std::ifstream ifs(outPath.string(), std::istream::binary);
+			BxInterleaveFileHeader interleave;
+	
+			while(interleave.type != (mco::byte)InterleaveFileType::End) {
+				if(!ifs)
+					break;
+				
+				interleave.Read(ifs);
+		
+#ifdef DUMP
+				interleave.Dump();
+#endif		
+		
+				interleave.ReadData(ifs, interleaveDir);		
+			}
+			
 		}
 
 		// Seek to the next position.
