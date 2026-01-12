@@ -32,35 +32,3 @@ inline T ReadUserType(std::istream& stream) {
 
     return temp;
 }
-
-// TODO: We have u24 now, we don't really need these
-
-template<std::endian Endian = std::endian::little>
-std::uint32_t ReadU24(std::istream& stream) {
-    std::uint8_t buf[3]{};
-    for(int i = 0; i < 3; ++i)
-        buf[i] = stream.get();
-
-    switch(Endian) {
-        case std::endian::little:
-            return ((buf[2] << 16) | (buf[1] << 8) | buf[0]);
-        case std::endian::big:
-            return ((buf[0] << 16) | (buf[1] << 8) | buf[2]);
-        default:
-            assert(false);
-            break;
-    }
-}
-
-template<std::endian Endian = std::endian::little>
-std::uint32_t ReadU24FromPtr(const std::uint8_t* buf) {
-    switch(Endian) {
-        case std::endian::little:
-            return ((buf[2] << 16) | (buf[1] << 8) | buf[0]);
-        case std::endian::big:
-            return ((buf[0] << 16) | (buf[1] << 8) | buf[2]);
-        default:
-            assert(false);
-            break;
-    }
-}

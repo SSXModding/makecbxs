@@ -15,15 +15,6 @@ namespace refpack {
 		NotRefpack = -3
 	};
 
-	// FIXME: This function is deprecated, unused, and *will* be removed
-	/**
-	 * Decompress a RefPack source.
-	 * 
-	 * \param[in] compressed Compressed span of data.
-	 * \return A decompressed buffer.
-	 */
-	std::vector<std::uint8_t> Decompress(std::span<std::uint8_t> compressed);
-
 	/// Queries the decompressed size of a RefPack compressed data stream.
 	Error size(const u8* pSrc, usize& outSize);
 
