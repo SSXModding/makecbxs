@@ -21,19 +21,19 @@ namespace fs = std::filesystem;
 
 template<std::endian Endian>
 void writeInterleave(const BxInterleaveFileHeader<Endian>& header, u8* pData, const tSDBLocation& location, const fs::path& Output) {
-	auto ridFormatted = std::format("RID_{:02x}_{:06x}_Type_{}", (std::uint32_t)header.ResourceID.m_uiSectionID, (std::uint32_t)header.ResourceID.m_uiUID, interleaveTypeToString(header.type));
+	auto formattedName = std::format("RID_{:02x}_{:06x}_Type_{}", (std::uint32_t)header.ResourceID.m_uiSectionID, (std::uint32_t)header.ResourceID.m_uiUID, interleaveTypeToString(header.type));
 
 	// Loose files get the name of the section only, since they only have one resource instance.
 	if(interleaveTypeIsLoose(header.type)) {
 		// a bit hacky
 		if(static_cast<u32>(header.ResourceID.m_uiUID) == 0x0) {
-			ridFormatted = std::format("{}", location.name);
+			formattedName = std::format("{}", location.name);
 		} else {
-			ridFormatted = std::format("{}_{:d}", location.name, static_cast<u32>(header.ResourceID.m_uiUID));
+			formattedName = std::format("{}_{:d}", location.name, static_cast<u32>(header.ResourceID.m_uiUID));
 		}
 	}
 
-	auto outPath = Output / (ridFormatted);
+	auto outPath = Output / formattedName;
 	outPath.replace_extension(interleaveFileExtension(header.type));
 
 	// do the dance

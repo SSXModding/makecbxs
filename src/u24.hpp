@@ -4,9 +4,6 @@
 
 namespace impl {
 
-    /**
-        * A sane 24-bit integer type.
-        */
     template<std::endian Endian = std::endian::little>
     struct U24Impl {
         constexpr U24Impl() = default;
@@ -73,8 +70,11 @@ namespace impl {
 } // namespace detail
 
 // uint24 types
+
+/// A unsigned 24-bit integer, with a particular endian.
 template<std::endian Endian>
 using u24Endian = impl::U24Impl<Endian>;
 
+/// A unsigned 24-bit integer.
 using u24 = impl::U24Impl<std::endian::native>;
 
