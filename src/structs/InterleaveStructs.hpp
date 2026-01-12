@@ -84,9 +84,8 @@ constexpr auto interleaveFileExtension(InterleaveFileType type) {
 }
 
 /// Returns true if a interleave type is known to be "loose".
-/// Loose essentially means:
-/// - One RID (with the section id, and UID always 0)
-/// - One instance of the type in each world stream
+/// See the comment in the definition of the [KNOWN_EXTENSIONS()] macro
+/// for more information.
 constexpr bool interleaveTypeIsLoose(InterleaveFileType type) {
     switch(type) {
 #define X(type) \
@@ -99,8 +98,9 @@ constexpr bool interleaveTypeIsLoose(InterleaveFileType type) {
 }
 
 struct tResourceID {
-    std::uint32_t m_uiSectionID : 8;
-    std::uint32_t m_uiUID		: 24;
+    constexpr static u8 SectionIDDontCare = 0xff;
+    u32 m_uiSectionID  : 8;
+    u32 m_uiUID		   : 24;
 };
 
 /// Header for each file inside an interleave file.
@@ -112,9 +112,15 @@ struct BxInterleaveFileHeader {
 
 #ifdef DUMP
     void dump() {
-        std::cout << "- Type " << (int)type << "\n";
-        std::cout << "- Size " << static_cast<std::uint32_t>(size) << "\n";
-        std::printf("- RID: %02x.%06x\n", (std::uint32_t)ResourceID.m_uiSectionID, (std::uint32_t)ResourceID.m_uiUID);
+        std::printf(
+                "- RID: %02x.%06x\n"
+                "- Resource Type: %s\n"
+                "- Resource Size: %d bytes\n",
+            // rid
+            (std::uint32_t)ResourceID.m_uiSectionID, (std::uint32_t)ResourceID.m_uiUID,
+            interleaveTypeToString(type),
+            static_cast<u32>(size)
+        );
     }
 #endif
 

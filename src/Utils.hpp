@@ -17,18 +17,3 @@ using u64 = std::uint64_t;
 using f32 = float;
 using f64 = double;
 using usize = std::size_t;
-
-
-template <typename T>
-inline T ReadUserType(std::istream& stream) {
-    T temp {};
-    if(stream) {
-        stream.read(reinterpret_cast<char*>(&temp), sizeof(T));
-    }
-
-    if(!stream) {
-        throw std::runtime_error("Attemped to read invalid stream");
-    }
-
-    return temp;
-}

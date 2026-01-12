@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "../Utils.hpp"
 
 struct BxStreamChunkHeader {
     // magic constants (TODO: these are entirely endian specific so need to be
@@ -16,11 +17,23 @@ struct BxStreamChunkHeader {
 
     // operator to check if header is valid
     bool valid() const {
-        return magic == CBXS ||  magic == CEND;
+        return magic == CBXS || magic == CEND;
+    }
+
+    u8* data() {
+        return reinterpret_cast<u8*>(this+1);
+    }
+
+    auto* next() {
+        return reinterpret_cast<BxStreamChunkHeader*>(
+            reinterpret_cast<u8*>(this) + size
+        );
     }
 
     #ifdef DUMP
-    void Dump() {
+    void dump() {
+        u8* pMagic = reinterpret_cast<u8*>(&magic);
+        std::printf("- Magic: %c%c%c%c\n", pMagic[0], pMagic[1], pMagic[2], pMagic[3]);
         if(magic == CEND)
             std::printf("- This chunk is a end chunk\n");
         std::printf(" - Chunk size (compressed): %08x bytes\n", size);
